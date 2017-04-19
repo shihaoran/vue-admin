@@ -11,7 +11,12 @@
 export default {
 	name: 'app',
 	components: {
-	}
+	},
+    data() {
+        return {
+            collapsed:false,
+        }
+    },
 }
 
 </script>

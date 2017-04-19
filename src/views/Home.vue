@@ -62,7 +62,7 @@
 					</el-col>
 					<el-col :span="24" class="content-wrapper">
 						<transition name="fade" mode="out-in">
-							<router-view></router-view>
+							<router-view :collapsed="collapsed"></router-view>
 						</transition>
 					</el-col>
 				</div>
@@ -120,6 +120,7 @@
 			//折叠导航栏
 			collapse:function(){
 				this.collapsed=!this.collapsed;
+				this.$root.collapsed=!this.$root.collapsed;
 			},
 			showMenu(i,status){
 				this.$refs.menuCollapsed.getElementsByClassName('submenu-hook-'+i)[0].style.display=status?'block':'none';
