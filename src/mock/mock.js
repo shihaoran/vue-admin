@@ -1,7 +1,12 @@
 import axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
 import { LoginUsers, Users } from './data/user';
+import { Employees, Projects, Steps, Tasks } from './data/project';
 let _Users = Users;
+let _Employees = Employees;
+let _Projects = Projects;
+let _Steps = Steps;
+let _Tasks = Tasks;
 
 export default {
   /**
@@ -19,6 +24,51 @@ export default {
     mock.onGet('/error').reply(500, {
       msg: 'failure'
     });
+
+    //by shihaoran
+      mock.onGet('/api/v1/employeeList').reply(config => {
+          return new Promise((resolve, reject) => {
+              setTimeout(() => {
+                  resolve([200, {
+                      employees: _Employees,
+                  }]);
+              }, 1000);
+          });
+      });
+
+      mock.onGet('/api/v1/projectList').reply(config => {
+          return new Promise((resolve, reject) => {
+              setTimeout(() => {
+                  resolve([200, {
+                      projects: _Projects,
+                  }]);
+              }, 1000);
+          });
+      });
+
+      mock.onGet('/api/v1/projectInfo').reply(config => {
+          let { projectId } = config.params;
+          let steps = _Steps.filter(step => {
+              if (step.projectId == projectId ) return true;
+              return false;
+          });
+          let stepIds=[];
+          steps.forEach(s =>{
+              stepIds.push(s.stepID);
+          })
+          let tasks = _Tasks.filter(task => {
+              if (stepIds.indexOf(task.stepID) !== -1) return true;
+              return false;
+          });
+          return new Promise((resolve, reject) => {
+              setTimeout(() => {
+                  resolve([200, {
+                      steps: steps,
+                      tasks: tasks,
+                  }]);
+              }, 1000);
+          });
+      });
 
     //登录
     mock.onPost('/login').reply(config => {

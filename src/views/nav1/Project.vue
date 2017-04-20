@@ -63,7 +63,7 @@
 		<!--编辑界面-->
 		<el-dialog title="编辑" v-model="editFormVisible" :close-on-click-modal="false">
 			<el-form :model="editForm" label-width="80px" :rules="editFormRules" ref="editForm">
-				<el-form-item label="阶段名称" prop="name">
+				<el-form-item label="阶段名称" >
 					<el-input v-model="editForm.name" auto-complete="off"></el-input>
 				</el-form-item>
 				<el-form-item label="完成情况">
@@ -79,11 +79,14 @@
                                  label="name" track-by="name">
                     </multiselect>
 				</el-form-item>
-				<el-form-item label="生日">
-					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.birth"></el-date-picker>
+				<el-form-item label="起始日期">
+					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.startTime"></el-date-picker>
 				</el-form-item>
-				<el-form-item label="地址">
-					<el-input type="textarea" v-model="editForm.addr"></el-input>
+				<el-form-item label="截止日期">
+					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.endTime"></el-date-picker>
+				</el-form-item>
+				<el-form-item label="备注">
+					<el-input type="textarea" v-model="editForm.comment"></el-input>
 				</el-form-item>
 			</el-form>
 			<div slot="footer" class="dialog-footer">
@@ -243,13 +246,24 @@
                 editLoading: false,
                 editFormRules: {
                     name: [
-                        { required: true, message: '请输入姓名', trigger: 'blur' }
-                    ]
+                        { required: true, message: '请输入阶段名称', trigger: 'blur' }
+                    ],
+                    active: [
+                        { required: true, message: '请输入项目状态', trigger: 'blur' }
+                    ],
+                    startTime: [
+                        { required: true, message: '请输入项目起始时间', trigger: 'blur' }
+                    ],
+                    endTime: [
+                        { required: true, message: '请输入项目结束时间', trigger: 'blur' }
+                    ],
+
                 },
                 //编辑界面数据
                 editForm: {
                     id: 0,
                     name: "",
+                    active: "",
                     chargePeople: [],
                     startTime: "",
                     endTime: "",
