@@ -10,35 +10,51 @@
 			</div>
 			<div class="board-scrum-view">
 				<ul class="board-scrum-stages horizontal-scroll ui-sortable sortable">
-					<li v-for="(step, index1) in steps" class="scrum-stage toggler-parent reached-top">
-						<el-card :body-style="{ overflowY: 'auto'}">
-							<span>{{step.name }}</span>
-							<mu-list>
-								<div v-for="(substep, index2) in step.substeps">
-									<mu-list-item   toggleNested>
-										<mu-avatar slot="leftAvatar" color="deepOrange300" backgroundColor="purple500">完成</mu-avatar>
-										<span slot="title" class="clearfix">
-										{{substep.name}}
-        								<el-tag :style="{ marginRight: '5px'}" v-for="(personName, index3) in substep.chargePeople" type="grey">{{personName}}</el-tag>
-									</span>
-										<span slot="describe" style="line-height: 28px;" class="clearfix">
-										<el-tag :style="{ marginRight: '5px'}"  type="primary">{{endDate(substep.endTime)}}</el-tag>
-									</span>
-										<el-card class="box-card" slot="nested">
-											<div slot="header" class="clearfix">
-												<span>卡片名称</span>
-												<el-button style="float: right;" type="primary">操作按钮</el-button>
-											</div>
-											<div v-for="o in 4" class="text item">
-												{{'列表内容 ' + o }}
-											</div>
-										</el-card>
-										<!--<i class="el-icon-document" slot="right"></i>-->
-									</mu-list-item>
-									<mu-divider inset/>
-								</div>
-							</mu-list>
-						</el-card>
+					<li v-for="(step, index1) in steps" class="scrum-stage">
+						<header class="scrum-stage-header">
+							<div class="stage-name">
+								<span>{{step.name }}</span>
+							</div>
+						</header>
+						<div class="scrum-stage-wrap">
+							<section class="scrum-stage-content thin-scroll">
+								<ul class="scrum-stage-tasks">
+									<div class="task-card" v-for="(substep, index2) in step.substeps">
+										<mu-list-item   toggleNested>
+											<mu-avatar slot="leftAvatar" color="deepOrange300" backgroundColor="purple500">完成</mu-avatar>
+											<span slot="title" class="clearfix">
+											    {{substep.name}}
+        								        <el-tag :style="{ marginRight: '5px'}" v-for="(personName, index3) in substep.chargePeople" type="grey">{{personName}}</el-tag>
+									        </span>
+											<span slot="describe" style="line-height: 28px;" class="clearfix">
+										        <el-tag :style="{ marginRight: '5px'}"  type="primary">{{endDate(substep.endTime)}}</el-tag>
+									        </span>
+                                            <div class="nested-items" slot="nested">
+                                                <div class="comment-card" >
+                                                    <div v-for="o in 4" class="text item">
+                                                        {{'列表内容 ' + o }}
+                                                    </div>
+                                                </div>
+                                                <div class="rate-block">
+                                                    <span>评价:</span>
+                                                    <el-rate
+                                                            v-model="value2"
+                                                            :colors="['#99A9BF', '#F7BA2A', '#FF9900']">
+                                                    </el-rate>
+                                                </div>
+                                                <div class="edit-block">
+                                                    <el-button :plain="true" type="info" size="small" @click.native="editFormVisible = true">编辑</el-button>
+                                                    <el-button :plain="true" type="danger" size="small">删除</el-button>
+                                                </div>
+                                            </div>
+										</mu-list-item>
+									</div>
+								</ul>
+							</section>
+						</div>
+                        <div class="task-creator-handler-wrap">
+                            <el-button type="primary" >新任务</el-button>
+                        </div>
 					</li>
 				</ul>
 			</div>
@@ -47,17 +63,21 @@
 		<!--编辑界面-->
 		<el-dialog title="编辑" v-model="editFormVisible" :close-on-click-modal="false">
 			<el-form :model="editForm" label-width="80px" :rules="editFormRules" ref="editForm">
-				<el-form-item label="姓名" prop="name">
+				<el-form-item label="阶段名称" prop="name">
 					<el-input v-model="editForm.name" auto-complete="off"></el-input>
 				</el-form-item>
-				<el-form-item label="性别">
-					<el-radio-group v-model="editForm.sex">
-						<el-radio class="radio" :label="1">男</el-radio>
-						<el-radio class="radio" :label="0">女</el-radio>
+				<el-form-item label="完成情况">
+					<el-radio-group v-model="editForm.active">
+						<el-radio class="radio" :label="true">进行中</el-radio>
+						<el-radio class="radio" :label="false">已完成</el-radio>
 					</el-radio-group>
 				</el-form-item>
-				<el-form-item label="年龄">
-					<el-input-number v-model="editForm.age" :min="0" :max="200"></el-input-number>
+				<el-form-item label="负责人">
+                    <multiselect v-model="editForm.chargePeople" :options="people"
+                                 :multiple="true" :close-on-select="false" :clear-on-select="false"
+                                 :hide-selected="true" placeholder="请选择负责人"
+                                 label="name" track-by="name">
+                    </multiselect>
 				</el-form-item>
 				<el-form-item label="生日">
 					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.birth"></el-date-picker>
@@ -109,10 +129,15 @@
 
 
 <script>
+    import Multiselect from 'vue-multiselect'
+
 	export default {
+        components: { Multiselect },
         props: ['collapsed'],
 		data() {
 			return {
+                value: null,
+                options: ['list', 'of', 'options'],
 				people: [
 					{
 					    id:'1',
@@ -205,6 +230,15 @@
                 ],
                 active: 0,
 
+                people: [
+                    { name: '王二红', pid: 'JavaScript' },
+                    { name: '张鲁斯', pid: 'JavaScript' },
+                    { name: '杨一鸣', pid: 'Ruby' },
+                    { name: '宁这则', pid: 'Ruby' },
+                    { name: '李子轩', pid: 'PHP' },
+                    { name: '平行', pid: 'Elixir' }
+                ],
+
                 editFormVisible: false,//编辑界面是否显示
                 editLoading: false,
                 editFormRules: {
@@ -215,11 +249,11 @@
                 //编辑界面数据
                 editForm: {
                     id: 0,
-                    name: '',
-                    sex: -1,
-                    age: 0,
-                    birth: '',
-                    addr: ''
+                    name: "",
+                    chargePeople: [],
+                    startTime: "",
+                    endTime: "",
+                    comment: "",
                 },
 
                 addFormVisible: false,//新增界面是否显示
@@ -245,6 +279,12 @@
 			onSubmit() {
 				console.log('submit!');
 			},
+            onEdit() {
+                editFormVisible=true;
+            },
+            onDelete() {
+                console.log('submit!');
+            },
             endDate: function (str) {
 			    if(str==undefined)
 			        return null;
@@ -274,6 +314,8 @@
 	}
 
 </script>
+
+<style src="vue-multiselect/dist/vue-multiselect.min.css"></style>
 
 <style>
 	.board-view {
@@ -319,7 +361,7 @@
 		background-color: #EEEEEE;
 		border-radius: 3px;
 	}
-	.scrum-stage .scrum-stage-header, .scrum-stage .sort-header-placeholder {
+    .scrum-stage .scrum-stage-header {
 		-webkit-flex: 0 0 auto;
 		-ms-flex: 0 0 auto;
 		flex: 0 0 auto;
@@ -332,10 +374,18 @@
 		-webkit-align-items: center;
 		-ms-flex-align: center;
 		align-items: center;
-		padding: 3px 5px;
+		padding: 14px 18px;
 		font-size: 15px;
 		font-weight: bold;
 		z-index: 1;
+	}
+    .scrum-stage .scrum-stage-header .stage-name {
+		-webkit-flex: 1 1 auto;
+		-ms-flex: 1 1 auto;
+		flex: 1 1 auto;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.scrum-stage .scrum-stage-wrap {
 		position: relative;
@@ -350,6 +400,56 @@
 		-ms-flex-direction: column;
 		flex-direction: column;
 	}
+    .scrum-stage .scrum-stage-content {
+        -webkit-flex: 1 1 0;
+        -ms-flex: 1 1 0px;
+        flex: 1 1 0;
+        overflow: auto;
+        overflow-x: visible;
+        -webkit-overflow-scrolling: touch;
+    }
+    .scrum-stage .scrum-stage-content > ul {
+        margin-bottom: 8px;
+    }
+
+    .scrum-stage .scrum-stage-tasks {
+        padding-left: 0px;
+    }
+
+    .scrum-stage .task-card {
+        margin: 0 8px 8px;
+        padding: 0;
+        background-color: white;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .scrum-stage .task-card .comment-card{
+        margin: 0 8px 8px;
+        padding: 5px 10px;
+        background-color: #fff59d;
+        border-radius: 3px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .scrum-stage .task-card .rate-block{
+        margin: 0 8px 8px;
+    }
+    .scrum-stage .task-card .edit-block{
+        margin: 0 20px 10px;
+        float: right;
+    }
+
+    .scrum-stage .task-creator-handler-wrap {
+        position: absolute;
+        bottom: 0;
+        height: 60px;
+        padding: 10px 15px 15px 15px;
+        border-bottom-right-radius: 3px;
+        border-bottom-left-radius: 3px;
+        width: 100%;
+        background-color: #EEEEEE;
+    }
 
 
 	.bottom {
