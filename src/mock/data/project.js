@@ -7,10 +7,12 @@ const Employees = [];
 
 for (let i = 0; i < employeeNum; i++) {
     Employees.push(Mock.mock({
-        employeeId: i,
+        employeeId: Mock.Random.guid(),
         name: Mock.Random.cname(),
+        address: Mock.mock('@county(true)'),
+        birth: Mock.Random.date(),
+        sex: Mock.Random.integer(0, 1)
     }));
-    console.log("ok");
 }
 
 const Projects = [];
@@ -23,7 +25,6 @@ for (let i = 0; i < projectNum; i++) {
         active: Mock.Random.boolean(),
         chargePeople: Mock.Random.cname(),
     }));
-    console.log("ok");
 }
 
 const Steps = [];
@@ -37,7 +38,6 @@ for (let i = 0; i < projectNum; i++) {
             stepIndex: j,
             stepName: Mock.Random.cword(2, 4)+"阶段",
         }));
-        console.log("ok");
     }
 }
 
@@ -52,13 +52,13 @@ for (let i = 0; i < max-1; i++) {
             taskId: Mock.Random.guid(),
             stepId: i,
             taskName: Mock.Random.cword(5, 7),
-            taskActive: Mock.Random.cword(5, 7),
+            taskActive: Mock.Random.boolean(),
             taskChargePeople: [ Mock.Random.cname() ],
             taskStartTime: Mock.Random.date(),
             taskEndTime: Mock.Random.date(),
             taskComment: Mock.Random.cparagraph( 2, 5 ),
+            taskRate: Mock.Random.integer(0, 5),
         }));
-        console.log("ok");
     }
 }
 

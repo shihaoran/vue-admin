@@ -2,48 +2,47 @@
 	<div id="content">
 		<div class="board-view" :style="{left:collapsed?'60px':'230px'}">
 			<div class="board-stage-view">
-				<el-steps space="30%" :active="active" finish-status="success" center="true" align-center="true">
+				<el-steps space="30%" :active="active" finish-status="success" center align-center>
 					<el-step title="销售阶段"></el-step>
 					<el-step title="实施阶段"></el-step>
 					<el-step title="项目完成"></el-step>
 				</el-steps>
 			</div>
-			<div class="board-scrum-view">
+			<div class="board-scrum-view" v-loading="loading">
 				<ul class="board-scrum-stages horizontal-scroll ui-sortable sortable">
 					<li v-for="(step, index1) in steps" class="scrum-stage">
 						<header class="scrum-stage-header">
 							<div class="stage-name">
-								<span>{{step.name }}</span>
+								<span>{{step.stepName }}</span>
 							</div>
 						</header>
 						<div class="scrum-stage-wrap">
 							<section class="scrum-stage-content thin-scroll">
 								<ul class="scrum-stage-tasks">
-									<div class="task-card" v-for="(substep, index2) in step.substeps">
+									<div class="task-card" v-for="(task, index2) in taskInId(step.stepId)">
 										<mu-list-item   toggleNested>
-											<mu-avatar slot="leftAvatar" color="deepOrange300" backgroundColor="purple500">完成</mu-avatar>
-											<span slot="title" class="clearfix">
-											    {{substep.name}}
-        								        <el-tag :style="{ marginRight: '5px'}" v-for="(personName, index3) in substep.chargePeople" type="grey">{{personName}}</el-tag>
+											<mu-avatar v-if="task.taskActive" slot="leftAvatar" :size="40" color="#FFFFFF" backgroundColor="#58B7FF">待办</mu-avatar>
+                                            <mu-avatar v-else slot="leftAvatar" color="#FFFFFF" :size="40" backgroundColor="#13CE66">完成</mu-avatar>
+											<span slot="title" class="clearfix" style="white-space: normal">
+											    {{task.taskName}}
+        								        <el-tag :style="{ margin: '3px 3px 0px 0px'}" v-for="(personName, index3) in task.taskChargePeople" type="grey">{{personName}}</el-tag>
 									        </span>
 											<span slot="describe" style="line-height: 28px;" class="clearfix">
-										        <el-tag :style="{ marginRight: '5px'}"  type="primary">{{endDate(substep.endTime)}}</el-tag>
+										        <el-tag :style="{ marginRight: '5px'}"  type="primary">{{endDate(task.taskEndTime)}}</el-tag>
 									        </span>
                                             <div class="nested-items" slot="nested">
                                                 <div class="comment-card" >
-                                                    <div v-for="o in 4" class="text item">
-                                                        {{'列表内容 ' + o }}
-                                                    </div>
+													<p>{{task.taskComment}}</p>
                                                 </div>
                                                 <div class="rate-block">
                                                     <span>评价:</span>
                                                     <el-rate
-                                                            v-model="value2"
+                                                            v-model="task.taskRate"
                                                             :colors="['#99A9BF', '#F7BA2A', '#FF9900']">
                                                     </el-rate>
                                                 </div>
                                                 <div class="edit-block">
-                                                    <el-button :plain="true" type="info" size="small" @click.native="editFormVisible = true">编辑</el-button>
+                                                    <el-button :plain="true" type="info" size="small" @click.native="onEdit(task)">编辑</el-button>
                                                     <el-button :plain="true" type="danger" size="small">删除</el-button>
                                                 </div>
                                             </div>
@@ -64,29 +63,29 @@
 		<el-dialog title="编辑" v-model="editFormVisible" :close-on-click-modal="false">
 			<el-form :model="editForm" label-width="80px" :rules="editFormRules" ref="editForm">
 				<el-form-item label="阶段名称" >
-					<el-input v-model="editForm.name" auto-complete="off"></el-input>
+					<el-input v-model="editForm.taskName" auto-complete="off"></el-input>
 				</el-form-item>
 				<el-form-item label="完成情况">
-					<el-radio-group v-model="editForm.active">
+					<el-radio-group v-model="editForm.taskActive">
 						<el-radio class="radio" :label="true">进行中</el-radio>
 						<el-radio class="radio" :label="false">已完成</el-radio>
 					</el-radio-group>
 				</el-form-item>
 				<el-form-item label="负责人">
-                    <multiselect v-model="editForm.chargePeople" :options="people"
+                    <multiselect v-model="editChargePeople" :options="employees"
                                  :multiple="true" :close-on-select="false" :clear-on-select="false"
                                  :hide-selected="true" placeholder="请选择负责人"
                                  label="name" track-by="name">
                     </multiselect>
 				</el-form-item>
 				<el-form-item label="起始日期">
-					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.startTime"></el-date-picker>
+					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.taskStartTime" format="yyyy-MM-dd"></el-date-picker>
 				</el-form-item>
 				<el-form-item label="截止日期">
-					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.endTime"></el-date-picker>
+					<el-date-picker type="date" placeholder="选择日期" v-model="editForm.taskEndTime" format="yyyy-MM-dd"></el-date-picker>
 				</el-form-item>
 				<el-form-item label="备注">
-					<el-input type="textarea" v-model="editForm.comment"></el-input>
+					<el-input type="textarea" v-model="editForm.taskComment"></el-input>
 				</el-form-item>
 			</el-form>
 			<div slot="footer" class="dialog-footer">
@@ -132,115 +131,21 @@
 
 
 <script>
-    import Multiselect from 'vue-multiselect'
+    import Multiselect from 'vue-multiselect';
+    import { getEmployeeList, getProjectInfo } from '../../api/api';
+
 
 	export default {
         components: { Multiselect },
-        props: ['collapsed'],
+        props: ['collapsed',''],
 		data() {
 			return {
-                value: null,
-                options: ['list', 'of', 'options'],
-				people: [
-					{
-					    id:'1',
-						name:'王新',
-					},
-					{
-					    id:'2',
-						name:'张丽',
-					},
-				],
-                steps: [
-					{
-					    id:'0',
-					    name:'项目信息收集',
-						substeps:[
-							{
-							    name:'阶段1',
-								active:false,
-								chargePeople:[
-								    "王二妈",
-									"离死亡",
-								],
-								startTime:"2017-03-20",
-								endTime:"2017-05-20",
-							},
-                            {
-                                name:'阶段2',
-                                active:true,
-                            },
-							{
-                                name:'阶段3',
-                                active:true,
-                            },
-						],
-					},
-                    {
-                        id:'1',
-                        name:'客户筛选',
-                        substeps:[
-                            {
-                                name:'阶段1',
-                                active:false,
-                            },
-                            {
-                                name:'阶段2',
-                                active:true,
-                            },
-                            {
-                                name:'阶段3',
-                                active:true,
-                            },
-                        ],
-                    },
-                    {
-                        id:'2',
-                        name:'客户筛选',
-                        substeps:[
-                            {
-                                name:'阶段1',
-                                active:false,
-                            },
-                            {
-                                name:'阶段2',
-                                active:true,
-                            },
-                            {
-                                name:'阶段3',
-                                active:true,
-                            },
-                        ],
-                    },
-                    {
-                        id:'3',
-                        name:'客户筛选',
-                        substeps:[
-                            {
-                                name:'阶段1',
-                                active:false,
-                            },
-                            {
-                                name:'阶段2',
-                                active:true,
-                            },
-                            {
-                                name:'阶段3',
-                                active:true,
-                            },
-                        ],
-                    },
-                ],
-                active: 0,
+			    loading: false,
+				employees: [],
+                steps: [],
+                tasks: [],
 
-                people: [
-                    { name: '王二红', pid: 'JavaScript' },
-                    { name: '张鲁斯', pid: 'JavaScript' },
-                    { name: '杨一鸣', pid: 'Ruby' },
-                    { name: '宁这则', pid: 'Ruby' },
-                    { name: '李子轩', pid: 'PHP' },
-                    { name: '平行', pid: 'Elixir' }
-                ],
+                active: 0,
 
                 editFormVisible: false,//编辑界面是否显示
                 editLoading: false,
@@ -260,15 +165,10 @@
 
                 },
                 //编辑界面数据
-                editForm: {
-                    id: 0,
-                    name: "",
-                    active: "",
-                    chargePeople: [],
-                    startTime: "",
-                    endTime: "",
-                    comment: "",
-                },
+                editForm: {},
+                editTaskId: "",
+                editTask: {},
+                editChargePeople: [],
 
                 addFormVisible: false,//新增界面是否显示
                 addLoading: false,
@@ -290,19 +190,57 @@
             }
 		},
 		methods: {
-			onSubmit() {
-				console.log('submit!');
+            editSubmit() {
+                this.editLoading=true;
+                let names = [];
+                for (let i = this.editChargePeople.length; i--;) {
+                    names.push(this.editChargePeople[i].name);
+                }
+                this.editForm.taskChargePeople=names;
+                this.editChargePeople=[];
+                for (let i = this.tasks.length; i--;) {
+                    if(this.tasks[i].taskId===this.editTaskId)
+                    {
+                        this.editForm.taskStartTime=this.dateToStr(this.editForm.taskStartTime);
+                        this.editForm.taskEndTime=this.dateToStr(this.editForm.taskEndTime);
+                        let temp=JSON.parse(JSON.stringify(this.editForm))
+                        this.tasks[i]=temp;
+                        console.log(this.tasks[i]);
+                    }
+
+                }
+                //this.editTask=this.editForm;
+                console.log(this.editForm);
+                this.editFormVisible=false;
+                this.editLoading=false;
 			},
-            onEdit() {
-                editFormVisible=true;
+            dateToStr(d) {
+                if(typeof d === "string")
+                {
+                    return d;
+                }
+                return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
             },
-            onDelete() {
+            onEdit(task) {
+                var temp = JSON.parse(JSON.stringify(task));
+                this.editForm=temp;
+                //this.editForm=task;
+			    this.editFormVisible=true;
+			    this.editTaskId=task.taskId;
+			    //this.editTask=task;
+            },
+            onDelete(task) {
                 console.log('submit!');
             },
             endDate: function (str) {
-			    if(str==undefined)
-			        return null;
-                var d = new Date(str.replace(/-/g, "/"));
+                if(typeof str === "string")
+                {
+                    if(str==undefined)
+                        return null;
+                    var d = new Date(str.replace(/-/g, "/"));
+                }
+			    else
+			        var d = str;
                 var dn = new Date();
                 if(d>dn)
                 {
@@ -312,18 +250,47 @@
                 {
                     return "已截止"
                 }
-            }
+            },
+            getProject: function () {
+                let para = {
+                    //projectId: this.$route.params.id,
+                    projectId: "20",
+                };
+                this.loading = true;
+                getProjectInfo(para).then((res) => {
+                    this.steps = res.data.steps;
+                    this.tasks = res.data.tasks;
+                    this.loading = false;
+                    console.log(this.steps);
+                    console.log(this.tasks);
+                });
+            },
+            getEmployee: function () {
+                this.loading = true;
+                getEmployeeList().then((res) => {
+                    this.employees = res.data.employees;
+                    this.loading = false;
+                    console.log(this.employees);
+                });
+            },
+            taskInId: function (stepId) {
+                return this.tasks.filter(task => {
+                    if (task.stepId === stepId) return true;
+                    return false;
+                });
+            },
 		},
         watch: {
 
 
 		},
         computed: {
-            screenHeight: function () {
-                console.log(this.$root.collapsed);
-                return window.innerHeight-250+"px";
-            },
+
         },
+        mounted() {
+            this.getEmployee();
+            this.getProject();
+        }
 
 	}
 
@@ -444,6 +411,7 @@
         background-color: #fff59d;
         border-radius: 3px;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+		white-space: normal;
     }
 
     .scrum-stage .task-card .rate-block{

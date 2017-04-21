@@ -27,20 +27,43 @@ export default {
 
     //by shihaoran
       mock.onGet('/api/v1/employeeList').reply(config => {
+          let employeeName="";
+          if(config.params){
+              if( "employeeName" in config.params){
+                  let { employeeName } = config.params;
+              }
+          }
+          let employees = _Employees.filter(employee => {
+              if (employeeName && employee.name.indexOf(employeeName) == -1) return false;
+              return true;
+          });
           return new Promise((resolve, reject) => {
               setTimeout(() => {
                   resolve([200, {
-                      employees: _Employees,
+                      employees: employees,
                   }]);
               }, 1000);
           });
       });
 
       mock.onGet('/api/v1/projectList').reply(config => {
+          let projectName="";
+          if(config.params){
+              if( "projectName" in config.params){
+                  let { projectName } = config.params;
+              }
+          }
+          else {
+              let projectName="";
+          }
+          let projects = _Projects.filter(project => {
+              if (projectName && project.name.indexOf(projectName) == -1) return false;
+              return true;
+          });
           return new Promise((resolve, reject) => {
               setTimeout(() => {
                   resolve([200, {
-                      projects: _Projects,
+                      projects: projects,
                   }]);
               }, 1000);
           });
@@ -54,10 +77,10 @@ export default {
           });
           let stepIds=[];
           steps.forEach(s =>{
-              stepIds.push(s.stepID);
-          })
+              stepIds.push(s.stepId);
+          });
           let tasks = _Tasks.filter(task => {
-              if (stepIds.indexOf(task.stepID) !== -1) return true;
+              if (stepIds.indexOf(task.stepId) !== -1) return true;
               return false;
           });
           return new Promise((resolve, reject) => {
