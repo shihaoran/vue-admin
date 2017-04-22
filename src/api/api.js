@@ -20,5 +20,7 @@ export const getEmployeeList = params => { return axios.get(`${base}/api/v1/empl
 
 export const getProjectList = params => { return axios.get(`${base}/api/v1/projectList`, { params: params }); };
 
+export const getProjectListPage = params => { return axios.get(`${base}/api/v1/projectListByPage`, { params: params }); };
+
 export const getProjectInfo = params => { return axios.get(`${base}/api/v1/projectInfo`, { params: params }); };
 

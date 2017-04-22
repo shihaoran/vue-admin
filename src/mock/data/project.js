@@ -22,7 +22,7 @@ for (let i = 0; i < projectNum; i++) {
         projectId: i,
         name: Mock.Random.cword(5, 7),
         endTime: Mock.Random.date(),
-        active: Mock.Random.boolean(),
+        status: Mock.Random.integer(0, 2),
         chargePeople: Mock.Random.cname(),
     }));
 }

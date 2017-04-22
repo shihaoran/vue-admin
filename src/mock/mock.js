@@ -27,10 +27,10 @@ export default {
 
     //by shihaoran
       mock.onGet('/api/v1/employeeList').reply(config => {
-          let employeeName="";
+          var employeeName="";
           if(config.params){
               if( "employeeName" in config.params){
-                  let { employeeName } = config.params;
+                  var { employeeName } = config.params;
               }
           }
           let employees = _Employees.filter(employee => {
@@ -47,14 +47,11 @@ export default {
       });
 
       mock.onGet('/api/v1/projectList').reply(config => {
-          let projectName="";
+          var projectName="";
           if(config.params){
               if( "projectName" in config.params){
-                  let { projectName } = config.params;
+                  var { projectName } = config.params;
               }
-          }
-          else {
-              let projectName="";
           }
           let projects = _Projects.filter(project => {
               if (projectName && project.name.indexOf(projectName) == -1) return false;
@@ -69,8 +66,45 @@ export default {
           });
       });
 
+      mock.onGet('/api/v1/projectListByPage').reply(config => {
+          var projectName="";
+          var page="";
+
+          if(config.params){
+              if( "projectName" in config.params){
+                  var { projectName } = config.params;
+              }
+              if( "page" in config.params){
+                  var { page } = config.params;
+              }
+          }
+          let projects = _Projects.filter(project => {
+              if (projectName && project.name.indexOf(projectName) == -1) return false;
+              return true;
+          });
+
+          let total = projects.length;
+
+          projects = projects.filter((project,index) => {
+              if (index < 20 * page && index >= 20 * (page - 1)) return true;
+              return false;
+          });
+          return new Promise((resolve, reject) => {
+              setTimeout(() => {
+                  resolve([200, {
+                      total: total,
+                      projects: projects,
+                  }]);
+              }, 1000);
+          });
+      });
+
       mock.onGet('/api/v1/projectInfo').reply(config => {
           let { projectId } = config.params;
+          let project = _Projects.filter(project => {
+              if (projectId && project.projectId === projectId) return true;
+              return false;
+          });
           let steps = _Steps.filter(step => {
               if (step.projectId == projectId ) return true;
               return false;
@@ -86,6 +120,7 @@ export default {
           return new Promise((resolve, reject) => {
               setTimeout(() => {
                   resolve([200, {
+                      projectInfo: project[0],
                       steps: steps,
                       tasks: tasks,
                   }]);

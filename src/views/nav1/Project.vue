@@ -2,7 +2,7 @@
 	<div id="content">
 		<div class="board-view" :style="{left:collapsed?'60px':'230px'}">
 			<div class="board-stage-view">
-				<el-steps space="30%" :active="active" finish-status="success" center align-center>
+				<el-steps space="30%" :active="projectInfo.status" finish-status="success" center align-center>
 					<el-step title="销售阶段"></el-step>
 					<el-step title="实施阶段"></el-step>
 					<el-step title="项目完成"></el-step>
@@ -157,12 +157,14 @@
         props: ['collapsed',''],
 		data() {
 			return {
+			    projectId: "",
+			    projectInfo: {},
+
 			    loading: false,
 				employees: [],
                 steps: [],
                 tasks: [],
 
-                active: 0,
 
                 editFormVisible: false,//编辑界面是否显示
                 editLoading: false,
@@ -324,16 +326,17 @@
             },
             getProject: function () {
                 let para = {
-                    //projectId: this.$route.params.id,
-                    projectId: "20",
+                    projectId: this.projectId,
                 };
                 this.loading = true;
                 getProjectInfo(para).then((res) => {
                     this.steps = res.data.steps;
                     this.tasks = res.data.tasks;
+                    this.projectInfo = res.data.projectInfo;
                     this.loading = false;
                     console.log(this.steps);
                     console.log(this.tasks);
+                    console.log(this.projectInfo);
                 });
             },
             getEmployee: function () {
@@ -359,6 +362,7 @@
 
         },
         mounted() {
+            this.projectId=this.$route.query.projectId;
             this.getEmployee();
             this.getProject();
         }

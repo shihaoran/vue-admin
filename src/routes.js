@@ -11,6 +11,7 @@ import Page6 from './views/nav3/Page6.vue'
 import echarts from './views/charts/echarts.vue'
 
 import Project from './views/nav1/Project.vue'
+import ProjectTable from './views/nav1/ProjectTable.vue'
 import Employee from './views/nav1/Employee.vue'
 
 let routes = [
@@ -34,10 +35,11 @@ let routes = [
         iconCls: 'el-icon-message',//图标样式class
         children: [
             { path: '/main', component: Main, name: '主页', hidden: true },
-            { path: '/table', component: Table, name: 'Table' },
-            { path: '/form', component: Form, name: 'Form' },
+            //{ path: '/table', component: Table, name: 'Table' },
+            //{ path: '/form', component: Form, name: 'Form' },
             { path: '/employee', component: Employee, name: '员工列表' },
-            { path: '/project', component: Project, name: '项目列表' },
+            { path: '/projectTable', component: ProjectTable, name: '项目列表' },
+            { path: '/project', component: Project, name: '项目详情' },
         ]
     },
     {
@@ -66,7 +68,7 @@ let routes = [
         name: 'Charts',
         iconCls: 'fa fa-bar-chart',
         children: [
-            { path: '/echarts', component: echarts, name: 'echarts' }
+            //{ path: '/echarts', component: echarts, name: 'echarts' }
         ]
     },
     {
