@@ -43,7 +43,7 @@
                                                 </div>
                                                 <div class="edit-block">
                                                     <el-button :plain="true" type="info" size="small" @click.native="onEdit(task)">编辑</el-button>
-                                                    <el-button :plain="true" type="danger" size="small">删除</el-button>
+                                                    <el-button :plain="true" type="danger" size="small" @click.native="onDeleteDialog(task.taskId)">删除</el-button>
                                                 </div>
                                             </div>
 										</mu-list-item>
@@ -52,7 +52,7 @@
 							</section>
 						</div>
                         <div class="task-creator-handler-wrap">
-                            <el-button type="primary" >新任务</el-button>
+                            <el-button type="primary" @click.native="onAdd(step.stepId)">新任务</el-button>
                         </div>
 					</li>
 				</ul>
@@ -97,30 +97,46 @@
 		<!--新增界面-->
 		<el-dialog title="新增" v-model="addFormVisible" :close-on-click-modal="false">
 			<el-form :model="addForm" label-width="80px" :rules="addFormRules" ref="addForm">
-				<el-form-item label="姓名" prop="name">
-					<el-input v-model="addForm.name" auto-complete="off"></el-input>
-				</el-form-item>
-				<el-form-item label="性别">
-					<el-radio-group v-model="addForm.sex">
-						<el-radio class="radio" :label="1">男</el-radio>
-						<el-radio class="radio" :label="0">女</el-radio>
-					</el-radio-group>
-				</el-form-item>
-				<el-form-item label="年龄">
-					<el-input-number v-model="addForm.age" :min="0" :max="200"></el-input-number>
-				</el-form-item>
-				<el-form-item label="生日">
-					<el-date-picker type="date" placeholder="选择日期" v-model="addForm.birth"></el-date-picker>
-				</el-form-item>
-				<el-form-item label="地址">
-					<el-input type="textarea" v-model="addForm.addr"></el-input>
-				</el-form-item>
+                <el-form-item label="阶段名称" >
+                    <el-input v-model="addForm.taskName" auto-complete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="完成情况">
+                    <el-radio-group v-model="addForm.taskActive">
+                        <el-radio class="radio" :label="true">进行中</el-radio>
+                        <el-radio class="radio" :label="false">已完成</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="负责人">
+                    <multiselect v-model="addChargePeople" :options="employees"
+                                 :multiple="true" :close-on-select="false" :clear-on-select="false"
+                                 :hide-selected="true" placeholder="请选择负责人"
+                                 label="name" track-by="name">
+                    </multiselect>
+                </el-form-item>
+                <el-form-item label="起始日期">
+                    <el-date-picker type="date" placeholder="选择日期" v-model="addForm.taskStartTime" format="yyyy-MM-dd"></el-date-picker>
+                </el-form-item>
+                <el-form-item label="截止日期">
+                    <el-date-picker type="date" placeholder="选择日期" v-model="addForm.taskEndTime" format="yyyy-MM-dd"></el-date-picker>
+                </el-form-item>
+                <el-form-item label="备注">
+                    <el-input type="textarea" v-model="addForm.taskComment"></el-input>
+                </el-form-item>
 			</el-form>
 			<div slot="footer" class="dialog-footer">
 				<el-button @click.native="addFormVisible = false">取消</el-button>
 				<el-button type="primary" @click.native="addSubmit" :loading="addLoading">提交</el-button>
 			</div>
 		</el-dialog>
+
+        <!--删除弹框-->
+        <el-dialog title="提示" v-model="dialogVisible" size="tiny">
+            <span>确定要删除么？</span>
+            <span slot="footer" class="dialog-footer">
+                <el-button @click="dialogVisible = false">取 消</el-button>
+                <el-button type="primary" @click="onDelete">确 定</el-button>
+            </span>
+        </el-dialog>
 
 	</div>
 
@@ -132,6 +148,7 @@
 
 <script>
     import Multiselect from 'vue-multiselect';
+    import util from '../../common/js/util'
     import { getEmployeeList, getProjectInfo } from '../../api/api';
 
 
@@ -179,12 +196,22 @@
                 },
                 //新增界面数据
                 addForm: {
-                    name: '',
-                    sex: -1,
-                    age: 0,
-                    birth: '',
-                    addr: ''
+                    taskId: "",
+                    stepId: "",
+                    taskName: "",
+                    taskActive: "",
+                    taskChargePeople: [],
+                    taskStartTime: "",
+                    taskEndTime: "",
+                    taskComment: "",
+                    taskRate: "",
                 },
+                addChargePeople: [],
+
+
+                dialogVisible: false,
+                deleteTaskId: "",
+
 
 
             }
@@ -193,27 +220,57 @@
             editSubmit() {
                 this.editLoading=true;
                 let names = [];
+
                 for (let i = this.editChargePeople.length; i--;) {
                     names.push(this.editChargePeople[i].name);
                 }
                 this.editForm.taskChargePeople=names;
                 this.editChargePeople=[];
+
+                this.editForm.taskStartTime = (!this.editForm.taskStartTime || this.editForm.taskStartTime == '') ? ''
+                    : util.formatDate.format(new Date(this.editForm.taskStartTime), 'yyyy-MM-dd');
+                this.editForm.taskEndTime = (!this.editForm.taskEndTime|| this.editForm.taskEndTime == '') ? ''
+                    : util.formatDate.format(new Date(this.editForm.taskEndTime), 'yyyy-MM-dd');
+
                 for (let i = this.tasks.length; i--;) {
                     if(this.tasks[i].taskId===this.editTaskId)
                     {
-                        this.editForm.taskStartTime=this.dateToStr(this.editForm.taskStartTime);
-                        this.editForm.taskEndTime=this.dateToStr(this.editForm.taskEndTime);
-                        let temp=JSON.parse(JSON.stringify(this.editForm))
-                        this.tasks[i]=temp;
-                        console.log(this.tasks[i]);
-                    }
 
+                        let temp=JSON.parse(JSON.stringify(this.editForm))
+                        this.tasks.splice(i, 1, temp)
+                    }
                 }
+
                 //this.editTask=this.editForm;
-                console.log(this.editForm);
+                //console.log(this.editForm);
                 this.editFormVisible=false;
                 this.editLoading=false;
 			},
+            addSubmit() {
+                this.addLoading=true;
+                let names = [];
+
+                for (let i = this.addChargePeople.length; i--;) {
+                    names.push(this.addChargePeople[i].name);
+                }
+                this.addForm.taskChargePeople=names;
+                this.addChargePeople=[];
+
+                this.addForm.taskStartTime = (!this.addForm.taskStartTime || this.editForm.taskStartTime == '') ? ''
+                    : util.formatDate.format(new Date(this.addForm.taskStartTime), 'yyyy-MM-dd');
+                this.addForm.taskEndTime = (!this.addForm.taskEndTime|| this.editForm.taskEndTime == '') ? ''
+                    : util.formatDate.format(new Date(this.addForm.taskEndTime), 'yyyy-MM-dd');
+
+                let temp=JSON.parse(JSON.stringify(this.addForm))
+                this.tasks.push(temp);
+
+                for (let i in this.addForm) {
+                    this.addForm[i]="";
+                }
+
+                this.addFormVisible=false;
+                this.addLoading=false;
+            },
             dateToStr(d) {
                 if(typeof d === "string")
                 {
@@ -229,8 +286,22 @@
 			    this.editTaskId=task.taskId;
 			    //this.editTask=task;
             },
-            onDelete(task) {
-                console.log('submit!');
+            onAdd(stepId) {
+                this.addForm.stepId=stepId;
+                this.addFormVisible=true;
+            },
+            onDelete() {
+                let that=this;
+                this.tasks=this.tasks.filter(function (item) {
+                    if(item.taskId === that.deleteTaskId)
+                        return false;
+                    return true;
+                });
+                this.dialogVisible=false;
+            },
+            onDeleteDialog(taskId) {
+                this.deleteTaskId=taskId;
+                this.dialogVisible=true;
             },
             endDate: function (str) {
                 if(typeof str === "string")
@@ -307,13 +378,17 @@
 		padding: 0;
 		overflow: hidden;
 	}
-    .board-scrum-view {
-        position: relative;
-        height: 20%;
+    .board-stage-view {
+        position: absolute;
+        top: 0;
+        height: 50px;
+        width: 100%;
     }
 	.board-scrum-view {
-		position: relative;
-		height: 90%;
+		position: absolute;
+        top: 50px;
+		bottom: 10px;
+        width: 100%;
 	}
 	.board-scrum-stages {
 		position: relative;
@@ -369,8 +444,9 @@
 		white-space: nowrap;
 	}
 	.scrum-stage .scrum-stage-wrap {
-		position: relative;
-		height: 100%;
+		position: absolute;
+        top: 50px;
+        bottom: 60px;
 		-webkit-flex: 1 1 auto;
 		-ms-flex: 1 1 auto;
 		flex: 1 1 auto;
